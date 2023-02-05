@@ -1,5 +1,6 @@
 /// <reference path="./typescript_definitions/index.d.ts" />
 /// <reference path="./typescript_definitions/oxView.d.ts" />
+/// <reference path="./typescript_definitions/socket.io-client.d.ts" />
 /*
 Hello my dear snooper, welcome to the source code for oxView!
 I assume if you're reading this file, you're probably either a developer or looking for something in the code.
@@ -196,5 +197,50 @@ function inIframe() {
     }
     catch (e) {
         return true;
+    }
+}
+function doPageLoadTasks() {
+    view.updateImageResolutionText();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("autoload") == 'true') {
+        var topology = null;
+        var conf = null;
+        const xhr = new XMLHttpRequest();
+        xhr.onload = (e) => {
+            topology = new File([xhr.response], "topology.top");
+            if (conf)
+                processRequestedFiles();
+        };
+        xhr.responseType = "arraybuffer";
+        xhr.open("GET", "http://localhost:3000/api/topology");
+        xhr.send();
+        function getConf(callback) {
+            const xhr2 = new XMLHttpRequest();
+            xhr2.onload = (e) => {
+                conf = new File([xhr2.response], "conf.oxdna");
+                if (topology)
+                    callback(conf);
+            };
+            xhr2.responseType = "arraybuffer";
+            xhr2.open("GET", "http://localhost:3000/api/conformation");
+            xhr2.send();
+        }
+        getConf((e) => processRequestedFiles());
+        function processRequestedFiles() {
+            // readFiles(topFile, datFile, idxFile, jsonFile, trapFile, parFile, pdbFile, hbFile, massFile, particleFile, patchFile, loroPatchFiles,scriptFile);
+            readFiles(topology, conf, null);
+            render();
+        }
+        var socket = io();
+        socket.on('file_change', () => {
+            console.log("files changed! updating conf...");
+            getConf((datFile) => {
+                const r = new FileReader();
+                r.onload = () => {
+                    updateConfFromFile(r.result);
+                };
+                r.readAsText(datFile);
+            });
+        });
     }
 }

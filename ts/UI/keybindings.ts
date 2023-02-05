@@ -66,7 +66,7 @@ canvas.addEventListener("keydown", event =>{
             } break;
 
         // Select everything not selected:
-        case 'i': if (event.ctrlKey || event.metaKey) {event.preventDefault(); invertSelection()} break;
+        case 'i': if ((event.ctrlKey || event.metaKey) && !event.shiftKey) {event.preventDefault(); invertSelection()} break;
 
         // Select all elements:
         case 'a': if (event.ctrlKey || event.metaKey) {event.preventDefault(); selectAll();} break;
